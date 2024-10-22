@@ -1,5 +1,197 @@
 # Auth Service
 
+[![English](https://img.shields.io/badge/lang-english-blue.svg)](README.md) [![Vietnamese](https://img.shields.io/badge/lang-vietnamese-blue.svg)](README.vi.md)
+
+## Basic information
+
+- IDE: `Visual Studio`
+- Language: `C#`
+- Framework: `DOTNET`
+- Template: `ASP.NET Core Web API (Native AOT)`
+- Lib: `OpenAPI`
+- Database: `MySQL`
+
+## Basic features
+
+### Sign Up
+
+- Create an account with email, phone number.
+- Verify account with OTP code via email.
+
+**Steps:**
+
+1. User enters email/phone number and password to register an account.
+2. Backend verifies if email or phone number already exists.
+3. Create account in database with unverified status.
+4. Backend sends an OTP code via email.
+5. User enters OTP code to verify.
+6. If OTP is valid, account moves to verified status.
+7. Send a successful registration response and the user can log in.
+
+**APIs:**
+
+- `POST /api/auth/signup` : Create a new account for the user via email or phone number.
+  - Request body
+    {
+    "email": "[user@example.com](mailto:user@example.com)",
+    "phone_number": "+84123456789",
+    "password": "StrongPassword123"
+    }
+  - Response code:
+    - 201
+    - 400
+- `POST /api/auth/verify` : Verify the user account using OTP code.
+  - Request body
+    {
+    "email": "[user@example.com](mailto:user@example.com)",
+    "otp_code": "123456"
+    }
+  - Response code:
+    - 200
+    - 400
+
+### Sign In
+
+- Sign in with email, phone number.
+- Support saving login session (Remember Me) via cookie or JWT.
+
+**Steps:**
+
+1. User enters email/phone number and password to log in.
+2. Backend authenticates login information, checks encrypted password (bcrypt).
+3. If information is correct, create JWT token or session.
+
+- If remember session: Save JWT in cookie with longer lifetime.
+- If don't remember session: Save JWT in localStorage or sessionStorage.
+
+4. Return JWT token and user information.
+
+**APIs:**
+
+- `POST /api/auth/login` : Log in to the system with email/phone number and password.
+  - Request body
+    {
+    "email": "[user@example.com](mailto:user@example.com)",
+    "password": "StrongPassword123",
+    "remember_me": true
+    }
+  - Response code:
+    - 201
+    - 400
+  - Response body
+    {
+    "access_token": "jwt_access_token",
+    "refresh_token": "jwt_refresh_token",
+    "expires_in": 3600
+    }
+
+### Forgot Password
+
+- Password reset email feature.
+
+**Steps:**
+
+1. User requests to reset password by entering email.
+2. Backend checks if email exists.
+3. Generate a token or password reset link and send it via email.
+4. User clicks on the link and enters a new password.
+5. Backend validates the token and updates the new password (bcrypt-encoded).
+
+**APIs:**
+
+- `POST /api/auth/forgot-password` : Sends a password reset email to the user.
+  - Request body
+    {
+    "email": "[user@example.com](mailto:user@example.com)"
+    }
+  - Response code:
+    - 200
+    - 404
+- `POST /api/auth/reset-password`: Resets a new password for the user after a forgot password request.
+  - Request body
+    {
+    "reset_token": "password_reset_token",
+    "new_password": "NewStrongPassword123"
+    }
+  - Response code:
+    - 200
+    - 400
+
+### Change Password
+
+- Allows users to change their password after logging in.
+- Verify the old password before allowing changes.
+
+**Steps:**
+
+1. User logs in and accesses the change password page.
+2. Enters the old password and new password.
+3. Backend validates the old password.
+4. If correct, encrypts the new password and updates it to the database.
+
+**APIs:**
+
+- `POST /api/auth/change-password`: Change the password for a logged in user.
+  - Request body
+    {
+    "current_password": "OldPassword123",
+    "new_password": "NewStrongPassword123"
+    }
+  - Response code:
+    - 200
+    - 400
+
+### Sign Out
+
+- Log out of the system and delete the token from the browser/device
+- Support log out on multiple devices.
+
+**Steps:**
+
+1. User clicks log out.
+2. Backend deletes JWT token from session list (if saved).
+3. Frontend deletes JWT token from cookie or localStorage.
+4. Redirects user to login page.
+
+**APIs:**
+
+- `POST /api/auth/logout`: Logs out of the system, invalidates current token.
+  - Response code:
+    - 200
+
+### Refresh token
+
+- Provides a mechanism to refresh JWT token to maintain user session without re-login.
+- Supports separate refresh token and access token.
+
+**Steps:**
+
+1. User requests to refresh token when access token expires.
+2. Backend checks refresh token.
+3. If valid, generate new access token and return to user.
+4. Save new access token in frontend (cookie or localStorage).
+
+**APIs:**
+
+- `POST /api/auth/refresh-token`: Refresh access token using refresh token.
+- Request body
+  {
+  "refresh_token": "jwt_refresh_token"
+  }
+- Response code:
+  - 200
+  - 403
+- Response body
+  {
+  "access_token": "new_jwt_access_token",
+  "expires_in": 3600
+  }
+
+### Brute Force Protection
+
+- Limit the number of submissions from the frontend using hcaptcha
+- Limit the number of failed login attempts
+
 ## Thông tin cơ bản
 
 - IDE: `Visual Studio`
@@ -104,6 +296,7 @@
     - 200
     - 404
 - `POST /api/auth/reset-password`: Đặt lại mật khẩu mới cho người dùng sau khi yêu cầu quên mật khẩu.
+
   - Request body
     {
     "reset_token": "password_reset_token",
@@ -112,103 +305,30 @@
   - Response code:
     - 200
     - 400
+      consecutive.
 
-### Đổi mật khẩu (Change Password)
+- Temporarily lock the account after multiple failures.
 
-- Cho phép người dùng thay đổi mật khẩu sau khi đăng nhập.
-- Xác minh mật khẩu cũ trước khi cho phép thay đổi.
+**Steps:**
 
-**Các bước:**
+1. Track the number of consecutive failed logins from the same IP or account.
+2. If it exceeds 3 times, temporarily lock the account for 15 minutes -> 1 hour -> 24 hours -> permanently lock.
 
-1. Người dùng đăng nhập và truy cập trang đổi mật khẩu.
-2. Nhập mật khẩu cũ và mật khẩu mới.
-3. Backend xác thực mật khẩu cũ.
-4. Nếu đúng, mã hóa mật khẩu mới và cập nhật vào cơ sở dữ liệu.
+### Session Management
 
-**Các API:**
+- Display and manage the user's current login sessions.
+- Support logging out of all devices or just a specific session.
+- Automatically expire sessions after a long period of inactivity.
 
-- `POST /api/auth/change-password`: Đổi mật khẩu cho người dùng đã đăng nhập.
-  - Request body
-    {
-    "current_password": "OldPassword123",
-    "new_password": "NewStrongPassword123"
-    }
-  - Response code:
-    - 200
-    - 400
+**Steps:**
 
-### Đăng xuất (Sign Out)
+1. Display a list of active sessions (based on JWT or session).
+2. The user can choose to log out of a specific session or all sessions.
+3. The backend destroys the corresponding token and removes the session from the list.
 
-- Đăng xuất khỏi hệ thống và xóa token khỏi trình duyệt/thiết bị.
-- Hỗ trợ đăng xuất trên nhiều thiết bị.
+**APIs:**
 
-**Các bước:**
-
-1. Người dùng nhấn đăng xuất.
-2. Backend xóa JWT token khỏi danh sách phiên hoạt động (nếu có lưu).
-3. Frontend xóa token JWT khỏi cookie hoặc localStorage.
-4. Điều hướng người dùng về trang đăng nhập.
-
-**Các API:**
-
-- `POST /api/auth/logout`: Đăng xuất khỏi hệ thống, vô hiệu hóa token hiện tại.
-  - Response code:
-    - 200
-
-### Làm mới mã token (Token Refresh)
-
-- Cung cấp cơ chế làm mới mã token JWT để duy trì phiên người dùng mà không cần đăng nhập lại.
-- Hỗ trợ refresh token và access token tách biệt.
-
-**Các bước:**
-
-1. Người dùng yêu cầu làm mới token khi access token hết hạn.
-2. Backend kiểm tra refresh token.
-3. Nếu hợp lệ, tạo access token mới và trả về cho người dùng.
-4. Lưu access token mới ở frontend (cookie hoặc localStorage).
-
-**Các API:**
-
-- `POST /api/auth/refresh-token`: Làm mới access token bằng refresh token.
-  - Request body
-    {
-    "refresh_token": "jwt_refresh_token"
-    }
-  - Response code:
-    - 200
-    - 403
-  - Response body
-    {
-    "access_token": "new_jwt_access_token",
-    "expires_in": 3600
-    }
-
-### Bảo vệ chống brute force (Brute Force Protection)
-
-- Hạn chế số lần gửi từ frontend bằng hcaptcha
-- Giới hạn số lần đăng nhập thất bại liên tiếp.
-- Tạm thời khóa tài khoản sau nhiều lần thất bại.
-
-**Các bước:**
-
-1. Theo dõi số lần đăng nhập thất bại liên tiếp từ cùng một IP hoặc tài khoản.
-2. Nếu vượt quá 3 lần, tạm thời khóa tài khoản 15 phút -> 1 giờ -> 24 giờ -> khóa vĩnh viễn.
-
-### Quản lý phiên (Session Management)
-
-- Hiển thị và quản lý các phiên đăng nhập hiện tại của người dùng.
-- Hỗ trợ đăng xuất khỏi tất cả các thiết bị hoặc chỉ một phiên cụ thể.
-- Tự động hết hạn phiên sau thời gian dài không hoạt động.
-
-**Các bước:**
-
-1. Hiển thị danh sách các phiên hoạt động (dựa trên JWT hoặc session).
-2. Người dùng có thể chọn đăng xuất khỏi một phiên cụ thể hoặc tất cả phiên.
-3. Backend hủy token tương ứng và xóa phiên khỏi danh sách.
-
-**Các API:**
-
-- `GET /api/auth/sessions`: Lấy danh sách các phiên đăng nhập hiện tại của người dùng.
+- `GET /api/auth/sessions`: Get a list of the user's current login sessions.
   - Response code:
     - 200
   - Response body
@@ -226,131 +346,89 @@
     "login_time": "2024-10-19T08:21:33Z"
     }
     ]
-- `POST /api/auth/sessions/revoke`: Đăng xuất khỏi phiên cụ thể hoặc tất cả các phiên.
+- `POST /api/auth/sessions/revoke`: Logs out of a specific session or all sessions.
   - Request body
     {
-    "session_id": "session_1" // Để đăng xuất khỏi phiên cụ thể, nếu không gửi sẽ đăng xuất tất cả
+    "session_id": "session_1" // To log out of a specific session, if not sent, log out all
     }
   - Response code:
     - 200
 
-### Kiểm tra quyền (Access Control)
+### Check permissions (Access Control)
 
-- Hỗ trợ phân quyền người dùng với các vai trò khác nhau (Admin, User).
-- Tích hợp các kiểm tra quyền khi truy cập các API hoặc tài nguyên.
+- Support user authorization with different roles (Admin, User).
+- Integrate permission checks when accessing APIs or resources.
 
-**Các bước:**
+**Steps:**
 
-1. Backend kiểm tra JWT token để xác định vai trò người dùng.
-2. Dựa trên vai trò, kiểm tra quyền truy cập API hoặc tài nguyên cụ thể.
-3. Nếu không đủ quyền, trả về lỗi 403 (Forbidden).
+1. Backend checks JWT token to determine user role.
+2. Based on the role, check access to specific API or resource.
+3. If not authorized, return error 403 (Forbidden).
 
-### Nhật ký hoạt động (Activity Log)
+### Activity Log
 
-- Ghi lại lịch sử đăng nhập, đăng xuất, và các thay đổi quan trọng (mật khẩu, thông tin tài khoản).
+- Record login, logout, and important changes (password, account information).
 
-**Các bước:**
+**Steps:**
 
-1. Ghi lại mỗi sự kiện đăng nhập, đăng xuất, thay đổi mật khẩu hoặc thay đổi vai trò của người dùng.
-2. Lưu trữ trong cơ sở dữ liệu hoặc hệ thống log chuyên dụng.
-3. Cung cấp giao diện cho quản trị viên xem xét nhật ký hoạt động.
+1. Record each login, logout, password change or user role change event.
+2. Store in a database or dedicated log system.
+3. Provide an interface for administrators to review the activity log.
 
-### Chính sách bảo mật (Security Policies)
+### Security Policies
 
-- Bắt buộc mật khẩu phức tạp (yêu cầu về độ dài, ký tự đặc biệt).
-- Hỗ trợ mã hóa mật khẩu với các thuật toán an toàn (bcrypt).
+- Require complex passwords (requirements for length, special characters).
+- Support password encryption with secure algorithms (bcrypt).
 
-**Các bước:**
+**Steps:**
 
-1. Khi người dùng đăng ký hoặc thay đổi mật khẩu, kiểm tra xem mật khẩu có đủ độ phức tạp hay không (yêu cầu về ký tự đặc biệt, chữ số, độ dài).
-2. Mã hóa mật khẩu trước khi lưu vào cơ sở dữ liệu sử dụng bcrypt.
+1. When a user registers or changes a password, check if the password is complex enough (requirements for special characters, numbers, length).
+2. Encrypt the password before saving it to the database using bcrypt.
 
-## Tính năng nâng cao (Theo dự án)
+## Advanced Features (By Project)
 
-### Đăng ký (Sign Up)
+### Sign Up
 
-- Hỗ trợ OAuth (Google, Facebook) để đăng ký.
+- Support OAuth (Google, Facebook) for registration.
 
-### Đăng nhập (Sign In)
+### Sign In
 
-- Đăng nhập bằng OAuth.
-- Xác thực đa yếu tố (Multi-Factor Authentication - MFA).
+- Log in with OAuth.
+- Multi-Factor Authentication (MFA).
 
-### Quên mật khẩu (Forgot Password)
+### Forgot Password
 
-- Liên kết hoặc mã OTP để xác thực và cho phép người dùng tạo mật khẩu mới.
+- A link or OTP code to authenticate and allow the user to create a new password.
 
-### Đổi mật khẩu (Change Password)
+### Change Password
 
-- Cho phép người dùng thay đổi mật khẩu sau khi đăng nhập.
-- Xác minh mật khẩu cũ trước khi cho phép thay đổi.
+- Allows the user to change the password after logging in.
+- Verify the old password before allowing the change.
 
-### Đăng xuất (Sign Out)
+### Sign Out
 
-- Hỗ trợ đăng xuất trên nhiều thiết bị.
+- Supports logging out on multiple devices.
 
-### Bảo vệ chống brute force (Brute Force Protection)
+### Brute Force Protection
 
-- Gửi cảnh báo qua email nếu có hoạt động đáng ngờ.
+- Sends email alerts if there is suspicious activity.
 
-### Quản lý phiên (Session Management)
+### Session Management
 
-- Hiển thị và quản lý các phiên đăng nhập hiện tại của người dùng.
-- Hỗ trợ đăng xuất khỏi tất cả các thiết bị hoặc chỉ một phiên cụ thể.
-- Tự động hết hạn phiên sau thời gian dài không hoạt động.
+- Displays and manages the user's current login sessions.
+- Supports logging out of all devices or just a specific session.
+- Automatically expires sessions after a long period of inactivity.
 
-### Xác thực hai yếu tố (Two-Factor Authentication - 2FA)
+### Two-Factor Authentication (2FA)
 
-- Xác thực qua SMS, email, hoặc ứng dụng OTP (Microsoft Authenticator).
-- Tùy chọn bắt buộc 2FA cho các tài khoản có quyền Admin.
+- Authentication via SMS, email, or OTP app (Microsoft Authenticator).
+- Optionally required 2FA for accounts with Admin rights.
 
-### Quản lý khóa API (API Key Management)
+### API Key Management
 
-- Cấp phát và quản lý khóa API cho các ứng dụng hoặc dịch vụ bên ngoài.
-- Cho phép giới hạn quyền truy cập dựa trên khóa API.
+- Issue and manage API keys for external applications or services.
+- Allow access restrictions based on API keys.
 
-## Cơ sở dữ liệu
+## Database
 
-### users
-
-```sql
-TABLE users (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    phone_number VARCHAR(15) UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    is_email_verified BOOLEAN DEFAULT FALSE,
-    is_phone_verified BOOLEAN DEFAULT FALSE,
-    otp_code VARCHAR(6),
-    otp_expires_at TIMESTAMP,
-    failed_login_attempts INT DEFAULT 0,
-    account_locked_until TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    last_login TIMESTAMP,
-    INDEX idx_email_phone (email, phone_number)
-);
-
-```
-
-### roles
-
-```sql
-TABLE roles (
-    id BIGINT PRIMARY KEY AUTO_INCREMENT,
-    role_name VARCHAR(50) NOT NULL UNIQUE
-);
-
-```
-
-### user_role
-
-```sql
-TABLE user_roles (
-    user_id BIGINT NOT NULL,
-    role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id),
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-);
-```
+- View file [DATABASE.md](../DATABASE.md)
