@@ -1,37 +1,24 @@
-﻿using Common.Domain.Entities.Roles;
-using System.ComponentModel;
+﻿using System.ComponentModel;
 
 namespace Common.Domain.Entities.Users
 {
     public class UserEntity
     {
-        public Guid Id { get; set; }
-        public string DisplayName { get; set; }
+        public long Id { get; set; }
         public string Email { get; set; }
-        public string UserName { get; set; }
-        public string? Mobile { get; set; }
-        public DateTimeOffset DateOfBirth { get; set; }
-        public Gender Gender { get; set; }
-        public UserType UserType { get; set; }
-        public RoleType RoleType { get; set; }
+        public string? PhoneNumber { get; set; }
         public string Password { get; set; }
         public byte[] PasswordSalt { get; set; } = [];
-        public UserStatus UserStatus { get; set; }
-        public DateTimeOffset CreatedOn { get; set; }
-        public LoginType LoginType { get; set; }
-        public bool IsDeleted { get; set; }
-        public bool NeedChangePassword { get; set; }
-
-    }
-    [Flags]
-    public enum RoleType : long
-    {
-        [RoleDescription("Invalid", UserType.None)]
-        None = 0,
-        [RoleDescription("", UserType.Internal)]
-        Admin = 1,
-        [RoleDescription("", UserType.External)]
-        User = 2,
+        public bool IsEmailVerified { get; set; }
+        public bool IsPhoneVerified { get; set; }
+        public string OtpCode { get; set; }
+        public DateTimeOffset OtpExpiredAt { get; set; }
+        public int FailedLoginAttempts { get; set; }
+        public DateTimeOffset AccoungLockedUntil { get; set; }
+        public DateTimeOffset CreatedAt { get; set; }
+        public DateTimeOffset UpdatedAt { get; set; }
+        public DateTimeOffset LastLogin { get; set; }
+        public List<UserRoleEntity> UserRoles { get; set; }
     }
 
     [Flags]

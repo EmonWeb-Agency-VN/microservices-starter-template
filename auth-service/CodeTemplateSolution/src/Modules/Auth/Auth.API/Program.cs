@@ -62,15 +62,15 @@ namespace Auth.API
 
                         var commonConfig = config.Build();
                         commonConfig.Bind(_commonConfig);
-                    })
-                    .ConfigureKestrel(options =>
-                    {
-                        var port = builder.Environment.IsDevelopment() ? 49671 : 443;
-                        options.ListenAnyIP(port, listenOptions =>
-                        {
-                            listenOptions.UseHttps(_commonConfig.SSLCertificate.Path);
-                        });
                     });
+                    //.ConfigureKestrel(options =>
+                    //{
+                    //    var port = builder.Environment.IsDevelopment() ? 49671 : 443;
+                    //    options.ListenAnyIP(port, listenOptions =>
+                    //    {
+                    //        listenOptions.UseHttps(_commonConfig.SSLCertificate.Path);
+                    //    });
+                    //});
 #pragma warning restore ASP0013 // Suggest switching from using Configure methods to WebApplicationBuilder.Configuration
                 builder.Host.AddLoggingConfiguration(_commonConfig);
                 ConfigureServices(builder);
@@ -228,7 +228,9 @@ namespace Auth.API
             services.AddDbContext<UserDbContext>((serviceProvider, options) =>
             {
                 var connectionString = _commonConfig.ConnectionStrings.DbConnection;
-                options.UseNpgsql(connectionString)
+                //options.UseNpgsql(connectionString)
+                //        .AddInterceptors(serviceProvider.GetService<UpdateAuditableEntitiesInterceptor>()!);
+                options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 40)))
                         .AddInterceptors(serviceProvider.GetService<UpdateAuditableEntitiesInterceptor>()!);
             });
             services.AddScoped<IDBRepository, DBRepository>();
@@ -296,9 +298,6 @@ namespace Auth.API
             app.UseMiddleware<RequestTimingMiddleware>();
 
             app.MapControllers();
-
-            app.MapFallbackToFile("static-files/index.html")
-                .RequireRateLimiting(_commonConfig.RateLimiter.Policy);
 
             await app.RunAsync();
         }

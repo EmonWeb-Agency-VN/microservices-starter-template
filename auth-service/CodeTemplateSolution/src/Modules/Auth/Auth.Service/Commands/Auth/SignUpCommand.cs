@@ -18,28 +18,15 @@ namespace Modules.Web.Application.Commands.Account
 {
     public class SignUpCommand : ICommand
     {
-        public string DisplayName { get; set; }
-        public string? Email { get; set; }
-        public string UserName { get; set; }
+        public string Email { get; set; }
+        public string? PhoneNumber { get; set; }
         public string Password { get; set; }
-        //public string? Code { get; set; }
-        public string? Mobile { get; set; }
-        public string? Photo { get; set; }
-        public string DateOfBirth { get; set; }
-        public Gender Gender { get; set; }
-        public RoleType RoleType { get; set; }
-        public LoginType LoginType { get; set; }
     }
 
     public class SignUpCommandValidator : AbstractValidator<SignUpCommand>
     {
         public SignUpCommandValidator(IDBRepository dBRepository)
         {
-            RuleFor(a => a.DisplayName)
-                .NotEmpty().WithError(SignUpValidationErrors.DisplayNameIsRequired)
-                .CouldBeVietnameseWord()
-                .MaximumLength(50).WithError(SignUpValidationErrors.DisplayNameExceedMaxLength);
-
             RuleFor(a => a.Email)
                 .EmailAddress()
                     .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.Email))
@@ -48,21 +35,6 @@ namespace Modules.Web.Application.Commands.Account
                     .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.Email))
                     .WithError(SignUpValidationErrors.InvalidEmailMaxLength);
 
-            RuleFor(a => a.UserName)
-                .NotEmpty().WithError(SignUpValidationErrors.UserNameIsRequired)
-                .Must(a => !a.Contains(' ')).WithError(SignUpValidationErrors.UserNameCannotContainWhitespace)
-                .MaximumLength(50).WithError(SignUpValidationErrors.UserNameExceedsMaxLength)
-                .NotContainSpecialCharacter()
-                .MustAsync(async (x, cancellationToken) =>
-                {
-                    var hasUser = await dBRepository.Context.Set<UserEntity>()
-                        .AnyAsync(a => a.UserName.ToLower() == x.ToLower(), cancellationToken: cancellationToken);
-                    if (!hasUser) return true;
-                    return false;
-                })
-                    .ApplyCurrentValidatorWhenAsync(async (a, cancellationToken) => await Task.FromResult(!string.IsNullOrEmpty(a.UserName)))
-                    .WithError(SignUpValidationErrors.UserNameAlreadyExisted);
-
             RuleFor(a => a.Password)
                 .NotEmpty().WithError(SignUpValidationErrors.PasswordIsRequired)
                 .MinimumLength(8).WithError(SignUpValidationErrors.PasswordMustBeAtLeast8CharactersLong)
@@ -70,28 +42,13 @@ namespace Modules.Web.Application.Commands.Account
                 .Matches("[a-z]").WithError(SignUpValidationErrors.PasswordMustContainAtLeast1LowerLetter)
                 .Matches("[0-9]").WithError(SignUpValidationErrors.PasswordMustContainAtLeast1Number);
 
-            RuleFor(a => a.Mobile)
-                .MaximumLength(13)
-                    .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.Mobile))
+            RuleFor(a => a.PhoneNumber)
+                .MaximumLength(15)
+                    .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.PhoneNumber))
                     .WithError(SignUpValidationErrors.MobileNumberExceedsLength)
                 .Matches(Constants.MobileRegexPattern)
-                    .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.Mobile))
-                    .WithError(SignUpValidationErrors.MobileNumberIsInvalid)
-                    //.MustAsync(async (m, cancellationToken) =>
-                    //{
-                    //    var mobileExist = await dBRepository.Context.Set<UserEntity>().AnyAsync(a => a.Mobile == m, cancellationToken: cancellationToken);
-                    //    if (!mobileExist) return true;
-                    //    return false;
-                    //})
-                    //    .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.Mobile))
-                    //    .WithError(CreateAccountValidationErrors.MobileNumberAlreadyExisted)
-                    ;
-
-            RuleFor(a => a.DateOfBirth)
-                .NotNull().NotEmpty().WithError(SignUpValidationErrors.DateOfBirthIsRequired)
-                .Must(a => DateTimeExtension.TryConvertDateTime(a, out _, DateFormat.Default))
-                    //.ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.DateOfBirth))
-                    .WithError(SignUpValidationErrors.DateOfBirthFormatIsNotCorrect);
+                    .ApplyCurrentValidatorWhen(a => !string.IsNullOrEmpty(a.PhoneNumber))
+                    .WithError(SignUpValidationErrors.MobileNumberIsInvalid);
         }
     }
 
@@ -135,7 +92,6 @@ namespace Modules.Web.Application.Commands.Account
 
     public class CreateAccountCommandHandler(IDBRepository dBRepository, IUserService userService, ISender sender) : ICommandHandler<SignUpCommand>
     {
-        private readonly string _delimiter = " - ";
         private static readonly Logger logger = LoggerHelper.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         public async Task<Result> Handle(SignUpCommand request, CancellationToken cancellationToken)
         {
@@ -143,23 +99,14 @@ namespace Modules.Web.Application.Commands.Account
             {
                 var newUser = new UserEntity
                 {
-                    DisplayName = request.DisplayName,
                     Email = string.IsNullOrEmpty(request.Email) ? string.Empty : request.Email,
-                    UserName = request.UserName,
-                    Mobile = string.IsNullOrEmpty(request.Mobile) ? string.Empty : request.Mobile,
-                    Gender = request.Gender,
-                    RoleType = request.RoleType,
-                    UserType = request.RoleType.ToUserType(),
+                    PhoneNumber = string.IsNullOrEmpty(request.PhoneNumber) ? string.Empty : request.PhoneNumber,
                     Password = PasswordUtils.HashPassword(request.Password, out var userSalt),
                     PasswordSalt = userSalt,
-                    LoginType = request.LoginType,
-                    UserStatus = UserStatus.Active,
-                    CreatedOn = DateTimeOffset.UtcNow,
                 };
                 await dBRepository.AddAsync(newUser);
 
                 await dBRepository.SaveChangesAsync(cancellationToken: cancellationToken);
-                var listRoleIds = UserRolePermissionUtils.GetRoleIdsFromRoleType(request.RoleType, request.RoleType.ToUserType());
 
                 return Result.Success();
             }
@@ -169,10 +116,5 @@ namespace Modules.Web.Application.Commands.Account
                 throw;
             }
         }
-    }
-
-    internal static class CreateAccountErrors
-    {
-        internal static Error CannotFindRoleAssociatedWithUser => new("CreateAccount.CannotFindRoleAssociatedWithUser", "Cannot find role associated with user.");
     }
 }

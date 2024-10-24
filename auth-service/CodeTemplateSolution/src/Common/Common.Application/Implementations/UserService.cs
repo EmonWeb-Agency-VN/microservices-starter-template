@@ -10,14 +10,13 @@ namespace Common.Application.Implementations
             throw new NotImplementedException();
         }
 
-        public async Task AssignUserRoles(List<Guid> roleIds, Guid newUserId, List<Guid>? resourceIds = null, ResourceType? resourceType = null)
+        public async Task AssignUserRoles(List<long> roleIds, long newUserId)
         {
             var listUserRoles = new List<UserRoleEntity>();
             foreach (var id in roleIds)
             {
                 var userRole = new UserRoleEntity
                 {
-                    Id = Guid.NewGuid(),
                     UserId = newUserId,
                     RoleId = id,
                 };

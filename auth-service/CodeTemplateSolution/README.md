@@ -1,15 +1,6 @@
-1. Cài đặt:
 
-- .NET 8
-- PostgreSQL 16
-
-2. Chạy project
-
-- dotnet --version
-
-- dotnet tool install --global dotnet-ef
-
-- chạy run_win.bat hoặc run_mac.bat
-
-  - Chọn (1)
-  - Sau khi (1) chạy xong, chọn (3)
+1. Open Package Manager Console in Visual Studio
+2. Set default project to `src\Common\Common.Persistence`
+3. Run `Add-Migration InitialCreate` to create migration files
+4. Run `Update-Database` to apply the migration
+5. Run project `Auth.API`

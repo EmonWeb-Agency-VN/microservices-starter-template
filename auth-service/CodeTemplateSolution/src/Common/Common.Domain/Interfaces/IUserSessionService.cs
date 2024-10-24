@@ -8,9 +8,9 @@ namespace Common.Domain.Interfaces
         Task<UserSessionTokenDto> GetTokenAsync();
         Guid? DecryptSessionId(string? sessionIdStr);
         Task AddOrUpdateUserSessionAsync(UserSessionEntity model, Expression<Func<UserSessionEntity, UserSessionEntity>>? updateFactory = null);
-        Task DeleteAllUserSessionAsync(Guid userId);
+        Task DeleteAllUserSessionAsync(long userId);
         Task<Guid> RetreiveSessionId();
-        Task BatchDeleteAllUserSessionAsync(List<Guid> userIds);
+        Task BatchDeleteAllUserSessionAsync(List<long> userIds);
     }
 
     public class UserSessionTokenDto

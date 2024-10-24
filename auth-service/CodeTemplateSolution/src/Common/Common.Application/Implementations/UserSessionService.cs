@@ -77,7 +77,7 @@ namespace Common.Application.Implementations
             }
         }
 
-        public async Task DeleteAllUserSessionAsync(Guid userId)
+        public async Task DeleteAllUserSessionAsync(long userId)
         {
             try
             {
@@ -102,7 +102,7 @@ namespace Common.Application.Implementations
                 throw;
             }
         }
-        public async Task BatchDeleteAllUserSessionAsync(List<Guid> userIds)
+        public async Task BatchDeleteAllUserSessionAsync(List<long> userIds)
         {
             try
             {

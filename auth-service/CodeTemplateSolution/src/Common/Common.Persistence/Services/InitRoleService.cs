@@ -3,6 +3,7 @@ using System.Transactions;
 using Common.Domain.Entities.Roles;
 using Common.Domain.Interfaces;
 using Common.Persistence.InitDataHelper;
+using Common.SharedKernel;
 using Common.SharedKernel.LogProvider;
 using Microsoft.EntityFrameworkCore;
 using NLog;
@@ -34,26 +35,7 @@ namespace Common.Persistence.Services
                     logger.Info($"Roles already existed. Skip step {Step}.");
                     return result;
                 }
-                var listRoles = new List<RoleEntity>
-                {
-                    new ()
-                    {
-                        Id = RoleConstants.AdminRoleId,
-                        Name = "",
-                        Description = "",
-                        RoleClassification = RoleClassification.BuiltIn,
-                        RoleLevel = RoleLevel.System
-                    },
-                    new ()
-                    {
-                        Id = RoleConstants.UserRoleId,
-                        Name = "",
-                        Description = "",
-                        RoleClassification = RoleClassification.BuiltIn,
-                        RoleLevel = RoleLevel.Internal
-                    },
-                };
-                await dBRepository.AddRangeAsync(listRoles);
+                await dBRepository.AddAsync(Constants.AdminRole);
                 await dBRepository.SaveChangesAsync();
                 scope.Complete();
             }

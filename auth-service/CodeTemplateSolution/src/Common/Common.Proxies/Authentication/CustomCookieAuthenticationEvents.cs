@@ -29,7 +29,7 @@ namespace Common.Proxies.Authentication
                 logger.Error("Invalid identity");
                 return;
             }
-            string username = identity.FindFirst(CookieClaimConstants.UserName)?.Value.ToLower();
+            string username = identity.FindFirst(CookieClaimConstants.Email)?.Value.ToLower();
             if (string.IsNullOrEmpty(username))
             {
                 logger.Error("The username is empty.");
@@ -57,7 +57,7 @@ namespace Common.Proxies.Authentication
                 }
                 else
                 {
-                    var username = context.Principal.FindFirst(CookieClaimConstants.UserName)?.Value?.ToString();
+                    var username = context.Principal.FindFirst(CookieClaimConstants.Email)?.Value?.ToString();
                     if (!string.IsNullOrWhiteSpace(username))
                     {
                         var identityClaims = (ClaimsIdentity)context.Principal.Identity;

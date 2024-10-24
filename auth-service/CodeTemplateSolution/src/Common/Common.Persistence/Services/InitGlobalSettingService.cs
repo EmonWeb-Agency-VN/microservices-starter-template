@@ -15,7 +15,7 @@ namespace Common.Persistence.Services
         private static readonly Logger logger = LoggerHelper.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private readonly IDBRepository dBRepository;
 
-        public int Step => 5;
+        public int Step => 3;
 
         public string FileName => "";
         public InitGlobalSettingService(IDBRepository dBRepository)

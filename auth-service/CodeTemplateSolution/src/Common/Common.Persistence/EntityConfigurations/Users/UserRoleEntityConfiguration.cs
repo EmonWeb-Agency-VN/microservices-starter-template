@@ -12,9 +12,8 @@ namespace Common.Persistence.EntityConfigurations.Users
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Id).ValueGeneratedOnAdd();
             builder.Property(x => x.UserId).IsRequired();
-            builder.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
+            builder.HasOne(a => a.User).WithMany(a => a.UserRoles).HasForeignKey(a => a.UserId);
             builder.Property(x => x.RoleId).IsRequired();
-            builder.HasOne(a => a.Role).WithMany(a => a.UserRoleMappings).HasForeignKey(a => a.RoleId);
 
         }
     }

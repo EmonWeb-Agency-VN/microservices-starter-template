@@ -19,20 +19,17 @@ namespace Common.Proxies.Invokers
     public class ServiceInvoker
     {
         private readonly IHttpClientFactory _httpClientFactory;
-        private readonly IGrpcChannelFactory _grpcChannelFactory;
         private readonly IHttpContextAccessor contextAccessor;
         private readonly IServiceScopeFactory serviceScopeFactory;
         private readonly string _baseUrl;
 
         public ServiceInvoker(
             IHttpClientFactory httpClientFactory,
-            IGrpcChannelFactory grpcChannelFactory,
             IConfiguration config,
             IHttpContextAccessor contextAccessor,
             IServiceScopeFactory serviceScopeFactory)
         {
             this._httpClientFactory = httpClientFactory;
-            _grpcChannelFactory = grpcChannelFactory;
             this.contextAccessor = contextAccessor;
             this.serviceScopeFactory = serviceScopeFactory;
             this._baseUrl = config["DeployHost"];
@@ -90,21 +87,6 @@ namespace Common.Proxies.Invokers
             JObject json = JObject.Parse(result);
             var data = json["result"].ToString();
             return JsonConvert.DeserializeObject<TResult>(data);
-        }
-
-        public async Task<TResponse> InvokeMethodGrpcAsync<TClient, TRequest, TResponse>(
-            Func<TClient, TRequest, Task<TResponse>> grpcMethod,
-            string grpcEndpoint,
-            TRequest request)
-            where TClient : ClientBase<TClient>
-        {
-            var channel = _grpcChannelFactory.CreateChannel(grpcEndpoint);
-            var grpcClient = Activator.CreateInstance(typeof(TClient), channel) as TClient;
-
-            if (grpcClient == null)
-                throw new Exception("Invalid gRPC client.");
-
-            return await grpcMethod(grpcClient, request);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Common.Domain.Entities.Users;
+﻿using Common.Domain.Entities.Roles;
+using Common.Domain.Entities.Users;
 using Common.SharedKernel.Utilities;
 using System.Text.Json;
 
@@ -15,7 +16,8 @@ namespace Common.SharedKernel
         public const string AuditObjKey = "AuditObjKey";
         public const string UnknownIP = "UNKNOWN IP";
 
-        public static readonly Guid SystemAdminId = new("c86d9bc1-7d17-4008-a5ab-ba5e5c9810c2");
+        public static readonly long SystemAdminId = 1;
+        public static readonly long AdminRoleId = 1;
 
         public const string DefaultCookieName = "_auth_default";
         public const string DefaultSessionId = "ESSID";
@@ -23,17 +25,15 @@ namespace Common.SharedKernel
         public static readonly UserEntity SystemAdmin = new()
         {
             Id = SystemAdminId,
-            DisplayName = "System Admin",
-            UserName = "systemadmin",
-            Email = "",
-            Mobile = "",
-            Gender = Gender.Male,
+            Email = "admin@admin.com",
+            PhoneNumber = "",
             Password = PasswordUtils.HashPassword("1qaz2wsxE", out var systemAdminSalt),
             PasswordSalt = systemAdminSalt,
-            UserType = UserType.Internal,
-            CreatedOn = DateTimeOffset.UtcNow,
-            LoginType = LoginType.Email,
-            UserStatus = UserStatus.Active
+        };
+        public static readonly RoleEntity AdminRole = new()
+        {
+            Id = AdminRoleId,
+            Name = "Admin",
         };
 
         public static readonly string MobileRegexPattern = @"(((\+|)84)|0)(3|5|7|8|9)+([0-9]{8})\b";

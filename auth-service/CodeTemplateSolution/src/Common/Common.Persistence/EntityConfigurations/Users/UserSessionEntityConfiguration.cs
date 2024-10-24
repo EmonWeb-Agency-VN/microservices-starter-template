@@ -18,7 +18,7 @@ namespace Common.Persistence.EntityConfigurations.Users
             builder.Property(a => a.RefreshTokenExpireTime);
             builder.Property(a => a.LoginType);
             builder.Property(a => a.UserAgent);
-            builder.Property(a => a.Permissions);
+            builder.Property(a => a.Roles);
             builder.Property(a => a.IpAddress);
             builder.Property(a => a.LastUpdateTime);
             builder.Property(a => a.LoginTime);

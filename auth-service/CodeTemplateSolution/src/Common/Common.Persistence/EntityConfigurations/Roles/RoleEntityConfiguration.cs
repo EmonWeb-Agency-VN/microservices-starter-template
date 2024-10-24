@@ -10,11 +10,8 @@ namespace Common.Persistence.EntityConfigurations.Roles
         {
             builder.ToTable($"Role");
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).ValueGeneratedOnAdd();
-            builder.Property(x => x.Name).IsRequired();
-            builder.Property(x => x.Description).IsRequired();
-            builder.Property(x => x.RoleClassification).IsRequired();
-            builder.Property(x => x.RoleLevel).IsRequired();
+            builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd();
+            builder.Property(x => x.Name).HasColumnName("role_name").IsRequired();
         }
     }
 }

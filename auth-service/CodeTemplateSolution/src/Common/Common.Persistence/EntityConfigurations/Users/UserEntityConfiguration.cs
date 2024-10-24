@@ -10,21 +10,24 @@ namespace Common.Persistence.EntityConfigurations.Users
         {
             builder.ToTable($"User");
             builder.HasKey(x => x.Id);
-            builder.Property(x => x.Id).ValueGeneratedOnAdd();
-            builder.Property(x => x.DisplayName).HasMaxLength(50).IsRequired();
-            builder.Property(x => x.Email).HasMaxLength(128);
-            builder.Property(x => x.UserName).HasMaxLength(50).IsRequired();
-            builder.Property(x => x.Mobile).HasMaxLength(20);
-            builder.Property(x => x.Gender).IsRequired();
-            builder.Property(x => x.DateOfBirth).IsRequired();
-            builder.Property(x => x.Password).IsRequired();
-            builder.Property(x => x.PasswordSalt).HasDefaultValue(Array.Empty<byte>()).IsRequired();
-            builder.Property(x => x.UserType).IsRequired();
-            builder.Property(x => x.UserStatus).IsRequired();
-            builder.Property(x => x.CreatedOn).IsRequired();
-            builder.Property(x => x.LoginType).IsRequired();
-            builder.Property(x => x.IsDeleted).IsRequired().HasDefaultValue(false);
-            builder.Property(x => x.NeedChangePassword).IsRequired().HasDefaultValue(false);
+            builder.Property(x => x.Id).HasColumnName("id").ValueGeneratedOnAdd().IsRequired();
+            builder.Property(x => x.Email).HasColumnName("email").HasMaxLength(255).IsRequired();
+            builder.Property(x => x.PhoneNumber).HasColumnName("phone_number").HasMaxLength(15).IsRequired(false);
+            builder.Property(x => x.Password).HasColumnName("password").IsRequired();
+            builder.Property(x => x.PasswordSalt).HasColumnName("password_salt").HasDefaultValue(Array.Empty<byte>()).IsRequired();
+            builder.Property(x => x.IsEmailVerified).HasColumnName("is_email_verified").IsRequired().HasDefaultValue(false);
+            builder.Property(x => x.IsPhoneVerified).HasColumnName("is_phone_verified").IsRequired().HasDefaultValue(false);
+            builder.Property(x => x.OtpCode).HasColumnName("otp_code").HasMaxLength(6).HasDefaultValue(string.Empty);
+            builder.Property(a => a.OtpExpiredAt).HasColumnName("otp_expires_at");
+            builder.Property(a => a.FailedLoginAttempts).HasColumnName("failed_login_atempts").HasDefaultValue(0);
+            builder.Property(a => a.AccoungLockedUntil).HasColumnName("account_locked_until");
+            builder.Property(a => a.CreatedAt).HasColumnName("created_at").ValueGeneratedOnAdd();
+            builder.Property(a => a.UpdatedAt).HasColumnName("updated_at").ValueGeneratedOnAddOrUpdate();
+            builder.Property(a => a.LastLogin).HasColumnName("last_login");
+
+            builder.HasIndex(a => new { a.Email, a.PhoneNumber }).HasDatabaseName("idx_email_phone");
+            builder.HasIndex(a => a.Email).IsUnique();
+            builder.HasIndex(a => a.PhoneNumber).IsUnique().HasFilter("[phone_number] IS NOT NULL");
         }
     }
 }

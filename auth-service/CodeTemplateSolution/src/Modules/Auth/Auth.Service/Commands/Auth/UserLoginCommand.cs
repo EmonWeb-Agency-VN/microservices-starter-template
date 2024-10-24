@@ -66,8 +66,8 @@ namespace Auth.Service.Commands.Auth
             {
                 var user = await dBRepository.Context.Set<UserEntity>()
                     .AsNoTracking()
-                    .Where(a => a.UserName.ToLower() == request.UserName.ToLower()
-                                && a.LoginType.HasFlag(LoginType.Email))
+                    .Where(a => a.Email.ToLower() == request.UserName.ToLower()
+                                || a.PhoneNumber == request.UserName)
                     .FirstOrDefaultAsync(cancellationToken: cancellationToken);
                 if (user == null)
                 {
@@ -86,7 +86,7 @@ namespace Auth.Service.Commands.Auth
                 {
                     await httpContextAccessor.HttpContext.SetAuditObj(new AuditModel(ApiStatus.Failed)
                     {
-                        UserName = user.UserName,
+                        UserName = user.Email,
                         AuditAction = AuditAction.SignIn,
                         ErrorDetail = UserLoginErrors.IncorrectPassword.Message,
                         ErrorCode = UserLoginErrors.IncorrectPassword.Code
@@ -94,55 +94,13 @@ namespace Auth.Service.Commands.Auth
                     logger.Error($"Wrong password for user {request.UserName}");
                     return Result.Failure(UserLoginErrors.InvalidCredentials);
                 }
-                if (user.IsDeleted)
-                {
-                    await httpContextAccessor.HttpContext.SetAuditObj(new AuditModel(ApiStatus.Failed)
-                    {
-                        UserName = user.UserName,
-                        AuditAction = AuditAction.SignIn,
-                        ErrorDetail = UserLoginErrors.UserIsDeleted.Message,
-                        ErrorCode = UserLoginErrors.UserIsDeleted.Code
-                    });
-                    logger.Error($"Current user is deleted. UserId: {user.Id}");
-                    return Result.Failure(UserLoginErrors.UserIsDeleted);
-                }
-                if (user.UserStatus != UserStatus.Active)
-                {
-                    switch (user.UserStatus)
-                    {
-                        case UserStatus.Inactive:
-                            await httpContextAccessor.HttpContext.SetAuditObj(new AuditModel(ApiStatus.Failed)
-                            {
-                                UserName = user.UserName,
-                                AuditAction = AuditAction.SignIn,
-                                ErrorDetail = UserLoginErrors.UserIsInactive.Message,
-                                ErrorCode = UserLoginErrors.UserIsInactive.Code
-                            });
-                            logger.Error($"Current user is inactive.");
-                            return Result.Failure(UserLoginErrors.UserIsInactive);
-                        case UserStatus.Locked:
-                            await httpContextAccessor.HttpContext.SetAuditObj(new AuditModel(ApiStatus.Failed)
-                            {
-                                UserName = user.UserName,
-                                AuditAction = AuditAction.SignIn,
-                                ErrorDetail = UserLoginErrors.UserIsLocked.Message,
-                                ErrorCode = UserLoginErrors.UserIsLocked.Code
-                            });
-                            logger.Error($"Current account is locked.");
-                            return Result.Failure(UserLoginErrors.UserIsLocked);
-                        default:
-                            break;
-                    }
-                }
                 if (httpContextAccessor.HttpContext is null)
                 {
                     return Result.Failure(CommonErrors.ContextIsNull);
                 }
 
                 var query = from s in dBRepository.Context.Set<UserRoleEntity>().Where(a => a.UserId == user.Id)
-                            join d in dBRepository.Context.Set<RolePermissionEntity>()
-                            on s.RoleId equals d.RoleId
-                            select (int)d.Permission;
+                            select s.RoleId;
 
                 var permissions = await query.OrderBy(a => a).ToListAsync(cancellationToken: cancellationToken);
                 var newSession = new UserSessionEntity
@@ -155,8 +113,8 @@ namespace Auth.Service.Commands.Auth
                     RememberLogin = request.RememberMe,
                     UserAgent = httpContextAccessor.HttpContext.Request.Headers.UserAgent.ToString(),
                     IpAddress = httpContextAccessor.HttpContext.Connection.RemoteIpAddress == null ? Constants.UnknownIP : httpContextAccessor.HttpContext.Connection.RemoteIpAddress.ToString(),
-                    Mobile = user.Mobile ?? string.Empty,
-                    Permissions = string.Join(";", permissions)
+                    Mobile = user.PhoneNumber ?? string.Empty,
+                    Roles = string.Join(";", permissions)
                 };
 
                 await userSessionService.AddOrUpdateUserSessionAsync(newSession);
@@ -174,8 +132,8 @@ namespace Auth.Service.Commands.Auth
 
                 identity.AddClaim(new Claim(CookieClaimConstants.Id, user.Id.ToString()));
                 identity.AddClaim(new Claim(CookieClaimConstants.SessionExpireTime, sessionExpireTime.Value.ToString()));
-                identity.AddClaim(new Claim(CookieClaimConstants.UserName, user.UserName));
-                identity.AddClaim(new Claim(CookieClaimConstants.DisplayName, user.DisplayName));
+                identity.AddClaim(new Claim(CookieClaimConstants.Email, user.Email));
+                identity.AddClaim(new Claim(CookieClaimConstants.Phone, user.PhoneNumber ?? string.Empty));
                 identity.AddClaim(new Claim(CookieClaimConstants.SessionId, encryptedSessionId));
 
                 var claimPrincipals = new ClaimsPrincipal(identity);
@@ -189,14 +147,9 @@ namespace Auth.Service.Commands.Auth
 
                 await httpContextAccessor.HttpContext.SetAuditObj(new AuditModel(ApiStatus.Success)
                 {
-                    UserName = user.UserName,
+                    UserName = user.Email,
                     AuditAction = AuditAction.SignIn,
                 });
-
-                if (user.NeedChangePassword)
-                {
-                    // TODO: Publish event to notify user to change password
-                }
 
                 return Result.Success();
 

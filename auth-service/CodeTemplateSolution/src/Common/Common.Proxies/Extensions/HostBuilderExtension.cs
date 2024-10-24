@@ -18,7 +18,11 @@ namespace Common.Proxies.Extensions
             builder.ConfigureLogging((context, logging) =>
             {
                 logging.ClearProviders();
-                LogManager.Configuration.LoggingRules.Clear();
+                if (LogManager.Configuration != null)
+                {
+                    LogManager.Configuration.LoggingRules.Clear();
+
+                }
                 LogManager.Configuration = new XmlLoggingConfiguration("nlog.config");
                 string directory = AppDomain.CurrentDomain.BaseDirectory;
 

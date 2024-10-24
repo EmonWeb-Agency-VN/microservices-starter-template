@@ -5,18 +5,18 @@ namespace Common.SharedKernel.Extensions
 {
     public static class HttpContextExtension
     {
-        public static Guid CurrentUserId(this HttpContext context)
+        public static long CurrentUserId(this HttpContext context)
         {
             var userIdClaim = GetClaimValue(context, "id");
-            Guid.TryParse(userIdClaim, out var userId);
-            return userId;
+            if (long.TryParse(userIdClaim, out var userId)) return userId;
+            else return -1;
         }
 
-        public static RoleType CurrentUserRole(this HttpContext context)
+        public static long CurrentUserRole(this HttpContext context)
         {
-            var userRole = RoleType.None;
+            long userRole = -1;
             var userRoleValue = GetClaimValue(context, "userrole");
-            if (Enum.TryParse(userRoleValue, out RoleType intValue))
+            if (long.TryParse(userRoleValue, out long intValue))
             {
                 userRole = intValue;
             }
@@ -53,7 +53,5 @@ namespace Common.SharedKernel.Extensions
         {
             return GetClaimValue(context, CookieClaimConstants.SessionExpireTime);
         }
-
-
     }
 }

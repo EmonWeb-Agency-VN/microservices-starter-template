@@ -33,7 +33,7 @@ namespace Common.Persistence.Interceptors
                 if (entity.Entity is AuditableEntities auditableEntity)
                 {
                     var currentUserId = this.httpContextAccessor.HttpContext.CurrentUserId();
-                    var userId = currentUserId != Guid.Empty ? currentUserId : Constants.SystemAdminId;
+                    var userId = currentUserId != -1 ? currentUserId : Constants.SystemAdminId;
                     switch (entity.State)
                     {
                         case EntityState.Added:
